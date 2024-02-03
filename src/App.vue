@@ -13,6 +13,8 @@
 import PiutangList from './components/PiutangList.vue'
 
 export default {
+  props: {
+  },
   name: 'App',
   components: {
     // HelloWorld,
@@ -29,5 +31,6 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+  font-size: 12px !important;
 }
 </style>
