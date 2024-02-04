@@ -13,16 +13,16 @@
               <h5 class="card-title">Filter</h5>
           </div>
           <div class="card-body" style="overflow: auto;">
-            <div class="row mb-3">
-              <label class="form-label mb-0">Tanggal Lelang</label>
+            <div class="row mb-3" v-for="(item, index) in filterRange" :key="index">
+              <label class="form-label mb-0">{{item.label}}</label>
               <div class="input-group input-group-sm">
-                <input type="date" class="form-control" v-model="filterValue">
+                <input :type="item.type" class="form-control" v-model="item.min">
                 <span class="input-group-text">S/d</span>
-                <input type="date" class="form-control" v-model="filterValue">
+                <input :type="item.type" class="form-control" v-model="item.max">
               </div>
             </div>
 
-            <div class="row mb-3">
+            <!-- <div class="row mb-3">
               <label class="form-label mb-0">Tanggal Jatuh Tempo</label>
               <div class="input-group input-group-sm">
                 <input type="date" class="form-control" v-model="filterValue">
@@ -74,7 +74,7 @@
                 <span class="input-group-text">S/d</span>
                 <input type="number" class="form-control" placeholder="Maksimum" v-model="filterValue">
               </div>
-            </div>
+            </div> -->
 
             <div class="row mb-3">
               <label class="form-label mb-0">Total</label>
@@ -102,7 +102,7 @@
           </div>
           <div class="card-footer">
             <button type="button" class="btn btn-sm btn-dark me-2" @click="toggleDrawer">Batal</button>
-            <button type="button" class="btn btn-sm btn-primary" @click="search">Search</button>
+            <button type="button" class="btn btn-sm btn-primary" @click="fetchData()">Search</button>
           </div>
       </div>
     </div>
@@ -174,9 +174,18 @@
     data() {
       return {
         showDrawer: false,
-        filterValue: '',
         piutangList: [],
         perPage: 10,
+        filterValue: '',
+        filterRange: [
+          { min: '', max: '', key: 'tanggal_lelang', label: 'Tanggal Lelang', type: 'date' },
+          { min: '', max: '', key: 'tanggal_jatuh_tempo', label: 'Tanggal Jatuh Tempo', type: 'date' },
+          { min: '', max: '', key: 'tanggal_lunas', label: 'Tanggal Lunas', type: 'date' },
+          { min: '', max: '', key: 'harga_terbentuk_rp', label: 'Harga Terbentuk', type: 'number' },
+          { min: '', max: '', key: 'biaya_admin_ex_ppn_rp', label: 'Biaya Admin ex PPN', type: 'number' },
+          { min: '', max: '', key: 'ppn_rp', label: 'PPN', type: 'number' },
+          { min: '', max: '', key: 'total_rp', label: 'Total', type: 'number' }
+        ],
         statusList: [
           { value: 'proses_pembayaran', label: 'Proses Pembayaran' },
           { value: 'konfirmasi', label: 'Konfirmasi Pembayaran' },
@@ -205,8 +214,6 @@
       },
       async bayar() {
         try {
-          console.log('bayar', this.piutangList.filter(item => item.check === true));
-
           const dataCheck = this.piutangList.filter(item => item.check === true)
 
           if (dataCheck.length < 1) {
@@ -222,7 +229,6 @@
             confirmButtonText: "Bayar",
             cancelButtonText: "Batal",
           }).then((result) => {
-            /* Read more about isConfirmed, isDenied below */
             if (result.isConfirmed) {
               const arrayId = dataCheck.map(item => item._id);
               this.submitBayar(arrayId);
@@ -250,10 +256,31 @@
       },
       async fetchData(skip = 0, limit = this.perPage) {
         try {
+          let condition = {};
+
+          for (const item of this.filterRange) {
+            let temp = {};
+            
+            if(item.min !== '') {
+              temp['$gte'] = item.min;
+            }
+            
+            if(item.max !== '') {
+              temp['$lte'] = item.max;
+            }
+            
+            if(Object.keys(temp).length > 0) {
+              condition[`${item.key}`] = temp;
+            }
+          }
+
+          console.log('cekcek ', this.filterRange);
+          console.log('cekcek ', condition);
+
           const data = {
-            condition:{},
-            skip:skip,
-            limit:limit
+            condition: condition,
+            skip: skip,
+            limit: limit
           };
 
           const response = await hitApi(data, 'piutang');
