@@ -3,7 +3,7 @@
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="#">Home</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Library</li>
+        <li class="breadcrumb-item active" aria-current="page">Piutang List</li>
       </ol>
     </nav>
 
@@ -113,8 +113,8 @@
       </div>
 
       <div class="col text-end">
-        <button type="button" class="btn btn-sm btn-outline-primary me-2">Refresh</button>
-        <button type="button" class="btn btn-sm btn-success me-2">Bayar</button>
+        <button type="button" class="btn btn-sm btn-outline-primary me-2" @click="fetchData()">Refresh</button>
+        <button type="button" class="btn btn-sm btn-success me-2" @click="bayar()">Bayar</button>
         <button type="button" class="btn btn-sm btn-warning">Export</button>
       </div>
     </div>
@@ -141,7 +141,9 @@
         </thead>
         <tbody>
           <tr v-for="(item, index) in piutangList" :key="index">
-            <td>{{ index + 1 }}</td>
+            <td>
+              <input class="form-check-input" type="checkbox" v-model="item.check" v-if="item.status !== 'lunas'">
+            </td>
             <td>{{ item.no_kewajiban }}</td>
             <td>{{ item.no_polisi }}</td>
             <td>{{ item.pemilik }}</td>
@@ -154,7 +156,10 @@
             <td>{{ formatDate(item.tanggal_lelang) }}</td>
             <td>{{ formatDate(item.tanggal_jatuh_tempo) }}</td>
             <td>{{ formatDate(item.tanggal_lunas) }}</td>
-            <td>{{ item.status }}</td>
+            <td>{{ showStatusLabel(item.status || '') }}</td>
+          </tr>
+          <tr v-if="piutangList.length === 0">
+            <td colspan="14" class="text-center">No data found</td>
           </tr>
         </tbody>
       </table>
@@ -172,17 +177,76 @@
         filterValue: '',
         piutangList: [],
         perPage: 10,
+        statusList: [
+          { value: 'proses_pembayaran', label: 'Proses Pembayaran' },
+          { value: 'konfirmasi', label: 'Konfirmasi Pembayaran' },
+          { value: 'lunas', label: 'Lunas' }
+        ]
       };
     },
     created() {
       this.fetchData();
     },
     methods: {
+      showStatusLabel(value) {
+        const foundObject = this.statusList.find(item => item.value === value);
+
+        if (foundObject) {
+          return foundObject.label;
+        } else {
+          return value;
+        }
+      },
       toggleDrawer() {
         this.showDrawer = !this.showDrawer;
       },
       formatDate(dateString) {
         return new Date(dateString).toLocaleDateString();
+      },
+      async bayar() {
+        try {
+          console.log('bayar', this.piutangList.filter(item => item.check === true));
+
+          const dataCheck = this.piutangList.filter(item => item.check === true)
+
+          if (dataCheck.length < 1) {
+            return this.$swal({
+              title: "Silahkan pilih data yang akan dibayar!",
+              icon: "error"
+            });
+          }
+
+          this.$swal({
+            title: "Apakah kamu yakin?",
+            showCancelButton: true,
+            confirmButtonText: "Bayar",
+            cancelButtonText: "Batal",
+          }).then((result) => {
+            /* Read more about isConfirmed, isDenied below */
+            if (result.isConfirmed) {
+              const arrayId = dataCheck.map(item => item._id);
+              this.submitBayar(arrayId);
+            }
+          });
+        } catch (error) {
+          console.error('Server error :', error);
+        }
+      },
+      async submitBayar(arrayId) {
+        const data = {
+          id:arrayId,
+        };
+
+        const response = await hitApi(data, 'piutang/update/status-paid');
+        if (response['status'] === true) {
+          this.fetchData();
+        }
+
+        const icon = response['status'] === true ? 'success' : 'error';
+        return this.$swal({
+          title: response['message'] || 'Data berhasil disimpan',
+          icon: icon
+        });
       },
       async fetchData(skip = 0, limit = this.perPage) {
         try {
@@ -192,7 +256,7 @@
             limit:limit
           };
 
-          const response = await hitApi(data);
+          const response = await hitApi(data, 'piutang');
           
           if (response['status'] === true) {
             this.piutangList = response['data'];

@@ -5,9 +5,9 @@ import axios from 'axios';
 const apiUrl = process.env.VUE_APP_API_URL;
 
 // Function to hit the API
-async function hitApi(data) {
+async function hitApi(data, url) {
   try {
-    const response = await axios.post(`${apiUrl}/piutang`, data);
+    const response = await axios.post(`${apiUrl}/${url}`, data);
     // Handle the response as needed
     console.log('API Response:', response.data);
     return response.data;
