@@ -150,6 +150,7 @@
         totalPages: 1,
         sortSelect: 'tanggal_lelang',
         sortBy: -1,
+        conditionHistory: {},
         filterRange: [
           { min: '', max: '', key: 'tanggal_lelang', label: 'Tanggal Lelang', type: 'date' },
           { min: '', max: '', key: 'tanggal_jatuh_tempo', label: 'Tanggal Jatuh Tempo', type: 'date' },
@@ -287,13 +288,17 @@
       async fetchData(firstGet = false) {
         try {
           const url = firstGet === true ? 'piutang' : 'piutang/change-page';
+          let condition = {};
+
           if (firstGet === true) {
             this.piutangList = [];
             this.currentPage = 1;
+            condition = await this.getCondition();
+          } else {
+            condition = this.conditionHistory;
           }
 
           const skip = (this.currentPage - 1) * this.perPage;
-          const condition = await this.getCondition();
           const data = {
             condition: condition,
             skip: skip,
@@ -309,6 +314,7 @@
             this.piutangList = response['data'];
             
             if (firstGet === true) {
+              this.conditionHistory = condition;
               this.totalItems = response['total'];
               this.totalPages = Math.ceil(this.totalItems / this.perPage)
             }
@@ -321,9 +327,8 @@
       },
       async exportData() {
         try {
-          const condition = await this.getCondition();
           const data = {
-            condition: condition,
+            condition: this.conditionHistory,
             skip: 0,
             limit: this.totalItems,
             sort: {
