@@ -23,60 +23,6 @@
             </div>
 
             <!-- <div class="row mb-3">
-              <label class="form-label mb-0">Tanggal Jatuh Tempo</label>
-              <div class="input-group input-group-sm">
-                <input type="date" class="form-control" v-model="filterValue">
-                <span class="input-group-text">S/d</span>
-                <input type="date" class="form-control" v-model="filterValue">
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="form-label mb-0">Tanggal Lunas</label>
-              <div class="input-group input-group-sm">
-                <input type="date" class="form-control" v-model="filterValue">
-                <span class="input-group-text">S/d</span>
-                <input type="date" class="form-control" v-model="filterValue">
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="form-label mb-0">Harga Terbentuk</label>
-              <div class="input-group input-group-sm">
-                <input type="number" class="form-control" placeholder="Minimum" v-model="filterValue">
-                <span class="input-group-text">S/d</span>
-                <input type="number" class="form-control" placeholder="Maksimum" v-model="filterValue">
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="form-label mb-0">Biaya Admin ex PPN</label>
-              <div class="input-group input-group-sm">
-                <input type="number" class="form-control" placeholder="Minimum" v-model="filterValue">
-                <span class="input-group-text">S/d</span>
-                <input type="number" class="form-control" placeholder="Maksimum" v-model="filterValue">
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="form-label mb-0">PPN</label>
-              <div class="input-group input-group-sm">
-                <input type="number" class="form-control" placeholder="Minimum" v-model="filterValue">
-                <span class="input-group-text">S/d</span>
-                <input type="number" class="form-control" placeholder="Maksimum" v-model="filterValue">
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="form-label mb-0">Total</label>
-              <div class="input-group input-group-sm">
-                <input type="number" class="form-control" placeholder="Minimum" v-model="filterValue">
-                <span class="input-group-text">S/d</span>
-                <input type="number" class="form-control" placeholder="Maksimum" v-model="filterValue">
-              </div>
-            </div> -->
-
-            <div class="row mb-3">
               <label class="form-label mb-0">Total</label>
               <div class="col">
                 <div class="form-check">
@@ -98,7 +44,7 @@
                   </label>
                 </div>
               </div>
-            </div>
+            </div> -->
           </div>
           <div class="card-footer">
             <button type="button" class="btn btn-sm btn-dark me-2" @click="toggleDrawer">Batal</button>
@@ -115,7 +61,7 @@
       <div class="col text-end">
         <button type="button" class="btn btn-sm btn-outline-primary me-2" @click="fetchData()">Refresh</button>
         <button type="button" class="btn btn-sm btn-success me-2" @click="bayar()">Bayar</button>
-        <button type="button" class="btn btn-sm btn-warning">Export</button>
+        <button type="button" class="btn btn-sm btn-warning" @click="exportData()">Export</button>
       </div>
     </div>
     
@@ -168,7 +114,7 @@
 </template>
   
 <script>
-  import { hitApi } from '../functions/apiservice.js'
+  import { hitApi, downloadCsv} from '../functions/apiservice.js'
 
   export default {
     data() {
@@ -274,9 +220,6 @@
             }
           }
 
-          console.log('cekcek ', this.filterRange);
-          console.log('cekcek ', condition);
-
           const data = {
             condition: condition,
             skip: skip,
@@ -288,6 +231,37 @@
           if (response['status'] === true) {
             this.piutangList = response['data'];
           }
+        } catch (error) {
+          console.error('Server error :', error);
+        }
+      },
+      async exportData(skip = 0, limit = this.perPage) {
+        try {
+          let condition = {};
+
+          for (const item of this.filterRange) {
+            let temp = {};
+            
+            if(item.min !== '') {
+              temp['$gte'] = item.min;
+            }
+            
+            if(item.max !== '') {
+              temp['$lte'] = item.max;
+            }
+            
+            if(Object.keys(temp).length > 0) {
+              condition[`${item.key}`] = temp;
+            }
+          }
+
+          const data = {
+            condition: condition,
+            skip: skip,
+            limit: limit
+          };
+
+          await downloadCsv(data, 'piutang/export');
         } catch (error) {
           console.error('Server error :', error);
         }
