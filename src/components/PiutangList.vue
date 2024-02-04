@@ -121,7 +121,7 @@
       return {
         showDrawer: false,
         piutangList: [],
-        perPage: 10,
+        perPage: 20,
         filterValue: '',
         filterRange: [
           { min: '', max: '', key: 'tanggal_lelang', label: 'Tanggal Lelang', type: 'date' },
@@ -134,7 +134,7 @@
         ],
         statusList: [
           { value: 'proses_pembayaran', label: 'Proses Pembayaran' },
-          { value: 'konfirmasi', label: 'Konfirmasi Pembayaran' },
+          { value: 'konfirmasi_pembayaran', label: 'Konfirmasi Pembayaran' },
           { value: 'lunas', label: 'Lunas' }
         ]
       };
@@ -156,7 +156,7 @@
         this.showDrawer = !this.showDrawer;
       },
       formatDate(dateString) {
-        return new Date(dateString).toLocaleDateString();
+        return dateString ? new Date(dateString).toLocaleDateString() : '';
       },
       async bayar() {
         try {
