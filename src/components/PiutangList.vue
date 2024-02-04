@@ -12,6 +12,7 @@
           <div class="card-header">
               <h5 class="card-title">Filter</h5>
           </div>
+
           <div class="card-body" style="overflow: auto;">
             <div class="row mb-3" v-for="(item, index) in filterRange" :key="index">
               <label class="form-label mb-0">{{item.label}}</label>
@@ -22,40 +23,48 @@
               </div>
             </div>
 
-            <!-- <div class="row mb-3">
-              <label class="form-label mb-0">Total</label>
+            <div class="row mb-3">
+              <label class="form-label mb-0">Status</label>
               <div class="col">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="prosespembayaran" id="flexCheckDefault" v-model="filterValue">
-                  <label class="form-check-label" for="flexCheckDefault">
-                    Proses Pembayaran
-                  </label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="konfirmasi" id="flexCheckChecked" v-model="filterValue">
-                  <label class="form-check-label" for="flexCheckChecked">
-                    Konfirmasi Pembayaran
-                  </label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="lunas" id="flexCheckChecked" checked v-model="filterValue">
-                  <label class="form-check-label" for="flexCheckChecked">
-                    Lunas
+                <div v-for="(status, index) in statusList" :key="index" class="form-check">
+                  <input class="form-check-input" type="checkbox" :value="status.value" :id="'checkbox' + index" v-model="status.checked">
+                  <label class="form-check-label" :for="'checkbox' + index">
+                    {{ status.label }}
                   </label>
                 </div>
               </div>
-            </div> -->
-          </div>
+            </div>
+          </div>          
+
           <div class="card-footer">
-            <button type="button" class="btn btn-sm btn-dark me-2" @click="toggleDrawer">Batal</button>
-            <button type="button" class="btn btn-sm btn-primary" @click="fetchData()">Search</button>
+            <button type="button" class="btn btn-sm btn-dark me-2" @click="toggleDrawer()">Tutup</button>
+            <button type="button" class="btn btn-sm btn-outline-dark me-2" @click="reset()">Reset Filter</button>
+            <button type="button" class="btn btn-sm btn-primary" @click="fetchData(true); toggleDrawer();">Search</button>
           </div>
       </div>
     </div>
 
     <div class="row mb-3">
       <div class="col text-start">
-        <button type="button" class="btn btn-sm btn-primary" @click="toggleDrawer">Filter</button>
+        <div class="row">
+          <div class="col-2">
+            <button type="button" class="btn btn-sm btn-primary" @click="toggleDrawer">Filter</button>    
+          </div>
+          <div class="col-10">
+            <div class="input-group input-group-sm">
+              <select class="form-select" v-model="sortSelect" @change="fetchData(true)">
+                <option v-for="sortOption in sortList" :key="sortOption.value" :value="sortOption.value">
+                  {{ sortOption.label }}
+                </option>
+              </select>
+              <span class="input-group-text">-</span>
+              <select class="form-select" v-model="sortBy" @change="fetchData(true)">
+                <option value="1">Asc</option>
+                <option value="-1">Desc</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="col text-end">
@@ -110,6 +119,21 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Pagination controls -->
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+          <button class="page-link" @click="prevPage" :disabled="currentPage === 1">&laquo;</button>
+        </li>
+        <li class="page-item" v-for="pageNumber in totalPages" :key="pageNumber" :class="{ active: pageNumber === currentPage }">
+          <button class="page-link" @click="changePage(pageNumber)">{{ pageNumber }}</button>
+        </li>
+        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+          <button class="page-link" @click="nextPage" :disabled="currentPage === totalPages">&raquo;</button>
+        </li>
+      </ul>
+    </nav>
   </div>
 </template>
   
@@ -121,8 +145,11 @@
       return {
         showDrawer: false,
         piutangList: [],
-        perPage: 20,
-        filterValue: '',
+        perPage: 10,
+        currentPage: 1,
+        totalPages: 1,
+        sortSelect: 'tanggal_lelang',
+        sortBy: -1,
         filterRange: [
           { min: '', max: '', key: 'tanggal_lelang', label: 'Tanggal Lelang', type: 'date' },
           { min: '', max: '', key: 'tanggal_jatuh_tempo', label: 'Tanggal Jatuh Tempo', type: 'date' },
@@ -133,14 +160,29 @@
           { min: '', max: '', key: 'total_rp', label: 'Total', type: 'number' }
         ],
         statusList: [
-          { value: 'proses_pembayaran', label: 'Proses Pembayaran' },
-          { value: 'konfirmasi_pembayaran', label: 'Konfirmasi Pembayaran' },
-          { value: 'lunas', label: 'Lunas' }
+          { checked: true, value: 'proses_pembayaran', label: 'Proses Pembayaran' },
+          { checked: true, value: 'konfirmasi_pembayaran', label: 'Konfirmasi Pembayaran' },
+          { checked: true, value: 'lunas', label: 'Lunas' }
+        ],
+        sortList: [
+          {value: 'no_kewajiban', label: 'No. Kewajiban'},
+          {value: 'no_polisi', label: 'No. Polisi'},
+          {value: 'pemilik', label: 'Pemilik'},
+          {value: 'peserta', label: 'Peserta'},
+          {value: 'nomor_va', label: 'Nomor VA'},
+          {value: 'harga_terbentuk_rp', label: 'Harga Terbentuk (Rp)'},
+          {value: 'biaya_admin_ex_ppn_rp', label: 'Biaya Admin ex PPN (Rp)'},
+          {value: 'ppn_rp', label: 'PPN (Rp)'},
+          {value: 'total_rp', label: 'Total (Rp)'},
+          {value: 'tanggal_lelang', label: 'Tanggal Lelang'},
+          {value: 'tanggal_jatuh_tempo', label: 'Tanggal Jatuh Tempo'},
+          {value: 'tanggal_lunas', label: 'Tanggal Lunas'},
+          {value: 'status', label: 'Status'}
         ]
       };
     },
     created() {
-      this.fetchData();
+      this.fetchData(true);
     },
     methods: {
       showStatusLabel(value) {
@@ -157,6 +199,18 @@
       },
       formatDate(dateString) {
         return dateString ? new Date(dateString).toLocaleDateString() : '';
+      },
+      reset() {
+        this.statusList = this.statusList.map(item => {
+          item.checked = true;
+          return item;
+        });
+
+        this.filterRange = this.filterRange.map(item => {
+          item.min = '';
+          item.max = '';
+          return item;
+        });
       },
       async bayar() {
         try {
@@ -200,70 +254,104 @@
           icon: icon
         });
       },
-      async fetchData(skip = 0, limit = this.perPage) {
-        try {
-          let condition = {};
+      async getCondition() {
+        let condition = {};
 
-          for (const item of this.filterRange) {
-            let temp = {};
-            
-            if(item.min !== '') {
-              temp['$gte'] = item.min;
-            }
-            
-            if(item.max !== '') {
-              temp['$lte'] = item.max;
-            }
-            
-            if(Object.keys(temp).length > 0) {
-              condition[`${item.key}`] = temp;
-            }
+        for (const item of this.filterRange) {
+          let temp = {};
+          
+          if(item.min !== '') {
+            temp['$gte'] = item.min;
+          }
+          
+          if(item.max !== '') {
+            temp['$lte'] = item.max;
+          }
+          
+          if(Object.keys(temp).length > 0) {
+            condition[`${item.key}`] = temp;
+          }
+        }
+
+        let status = [];
+        for (const item of this.statusList) {
+          if (item.checked === true) {
+            status.push(item.value);
+          }   
+        }
+
+        condition['status'] = { $in: status };
+
+        return condition;
+      },
+      async fetchData(firstGet = false) {
+        try {
+          const url = firstGet === true ? 'piutang' : 'piutang/change-page';
+          if (firstGet === true) {
+            this.piutangList = [];
+            this.currentPage = 1;
           }
 
+          const skip = (this.currentPage - 1) * this.perPage;
+          const condition = await this.getCondition();
           const data = {
             condition: condition,
             skip: skip,
-            limit: limit
+            limit: this.perPage,
+            sort: {
+              [this.sortSelect]: parseInt(this.sortBy)
+            }
           };
 
-          const response = await hitApi(data, 'piutang');
+          const response = await hitApi(data, url);
           
           if (response['status'] === true) {
             this.piutangList = response['data'];
+            
+            if (firstGet === true) {
+              this.totalItems = response['total'];
+              this.totalPages = Math.ceil(this.totalItems / this.perPage)
+            }
+          } else {
+            this.piutangList = [];
           }
         } catch (error) {
           console.error('Server error :', error);
         }
       },
-      async exportData(skip = 0, limit = this.perPage) {
+      async exportData() {
         try {
-          let condition = {};
-
-          for (const item of this.filterRange) {
-            let temp = {};
-            
-            if(item.min !== '') {
-              temp['$gte'] = item.min;
-            }
-            
-            if(item.max !== '') {
-              temp['$lte'] = item.max;
-            }
-            
-            if(Object.keys(temp).length > 0) {
-              condition[`${item.key}`] = temp;
-            }
-          }
-
+          const condition = await this.getCondition();
           const data = {
             condition: condition,
-            skip: skip,
-            limit: limit
+            skip: 0,
+            limit: this.totalItems,
+            sort: {
+              [this.sortSelect]: parseInt(this.sortBy)
+            }
           };
 
           await downloadCsv(data, 'piutang/export');
         } catch (error) {
           console.error('Server error :', error);
+        }
+      },
+      changePage(pageNumber) {
+        if (pageNumber >= 1 && pageNumber <= this.totalPages) {
+          this.currentPage = pageNumber;
+          this.fetchData();
+        }
+      },
+      nextPage() {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          this.fetchData();
+        }
+      },
+      prevPage() {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+          this.fetchData();
         }
       },
     },
