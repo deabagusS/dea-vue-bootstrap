@@ -48,7 +48,7 @@
       <div class="col text-start">
         <div class="row">
           <div class="col-2">
-            <button type="button" class="btn btn-sm btn-primary" @click="toggleDrawer">Filter</button>    
+            <button type="button" class="btn btn-sm btn-primary w-100" @click="toggleDrawer">Filter</button>    
           </div>
           <div class="col-10">
             <div class="input-group input-group-sm">
