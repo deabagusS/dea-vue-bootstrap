@@ -140,21 +140,21 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>V</td>
-            <td>1</td>
-            <td>123456</td>
-            <td>John Doe</td>
-            <td>Participant 1</td>
-            <td>VA123</td>
-            <td>1,000,000</td>
-            <td>100</td>
-            <td>50</td>
-            <td>1,150,000</td>
-            <td>2024-02-03</td>
-            <td>2024-03-01</td>
-            <td>2024-03-15</td>
-            <td>Paid</td>
+          <tr v-for="(item, index) in piutangList" :key="index">
+            <td>{{ index + 1 }}</td>
+            <td>{{ item.no_kewajiban }}</td>
+            <td>{{ item.no_polisi }}</td>
+            <td>{{ item.pemilik }}</td>
+            <td>{{ item.peserta }}</td>
+            <td>{{ item.nomor_va }}</td>
+            <td>{{ item.harga_terbentuk_rp.toLocaleString() }}</td>
+            <td>{{ item.biaya_admin_ex_ppn_rp.toLocaleString() }}</td>
+            <td>{{ item.ppn_rp.toLocaleString() }}</td>
+            <td>{{ item.total_rp.toLocaleString() }}</td>
+            <td>{{ formatDate(item.tanggal_lelang) }}</td>
+            <td>{{ formatDate(item.tanggal_jatuh_tempo) }}</td>
+            <td>{{ formatDate(item.tanggal_lunas) }}</td>
+            <td>{{ item.status }}</td>
           </tr>
         </tbody>
       </table>
@@ -163,35 +163,49 @@
 </template>
   
 <script>
+  import { hitApi } from '../functions/apiservice.js'
+
   export default {
     data() {
       return {
         showDrawer: false,
         filterValue: '',
-
-        piutangList: [], // Your piutang list data
-        perPage: 10, // Number of items per page
-        fields: [
-          { key: 'check', label: 'Check' },
-          { key: 'noKewajiban', label: 'No. Kewajiban' },
-          { key: 'noPolisi', label: 'No. Polisi' },
-          { key: 'pemilik', label: 'Pemilik' },
-        ],
+        piutangList: [],
+        perPage: 10,
       };
+    },
+    created() {
+      this.fetchData();
     },
     methods: {
       toggleDrawer() {
         this.showDrawer = !this.showDrawer;
       },
-      filterData() {
-        // Implement your filtering logic here
+      formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString();
+      },
+      async fetchData(skip = 0, limit = this.perPage) {
+        try {
+          const data = {
+            condition:{},
+            skip:skip,
+            limit:limit
+          };
+
+          const response = await hitApi(data);
+          
+          if (response['status'] === true) {
+            this.piutangList = response['data'];
+          }
+        } catch (error) {
+          console.error('Server error :', error);
+        }
       },
     },
   };
 </script>
   
 <style scoped>
-  /* Add your styling for the drawer */
   .drawer {
     position: fixed;
     top: 0;
